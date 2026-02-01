@@ -1,0 +1,240 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. FOYDALANUVCHILAR VA XAVFSIZLIK (Auth)
+// ==========================================
+model User {
+  id              String    @id @default(uuid())
+  phone           String    @unique
+  email           String?   @unique
+  password        String
+  fullName        String?
+  role            Role      @default(CUSTOMER)
+  isActive        Boolean   @default(false)
+  isEmailVerified Boolean   @default(false)
+  isPhoneVerified Boolean   @default(false)
+  hashedRT        String?   // Hashed Refresh Token
+  
+  // OTP mantiqi (Redis ishlatish tavsiya etiladi, lekin zaxira uchun bu yerda ham bo'lishi mumkin)
+  otpCode         String?
+  otpExpires      DateTime?
+
+  addresses       Address[]
+  orders          Order[]
+  cart            Cart?
+  wishlist        Wishlist?
+  reviews         Review[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+  MODERATOR
+  COURIER
+  SUPER_ADMIN
+}
+
+// ==========================================
+// 2. MAHSULOTLAR IERARXIYASI
+// ==========================================
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  icon        String?    // Kategoriya uchun rasm URL
+  parentId    String?
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[] @relation("SubCategories")
+  products    Product[]
+  odooId      Int?       @unique // Odoo dagi IDsi
+}
+
+model Product {
+  id            String    @id @default(uuid())
+  name          String
+  slug          String    @unique
+  description   String    @db.Text
+  brand         String?
+  categoryId    String
+  category      Category  @relation(fields: [categoryId], references: [id])
+  sellerId      String    // Sotuvchi IDsi
+  
+  rating        Float     @default(0)
+  status        ProductStatus @default(DRAFT)
+  isDeleted     Boolean   @default(false) // Soft delete uchun
+  
+  variants      ProductVariant[]
+  reviews       Review[]
+  wishlistedBy  Wishlist[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  odooId        Int?      @unique // Odoo dagi IDsi
+}
+
+// ==========================================
+// 3. VARIANTLAR: RANG VA O'LCHAM (Optimal usul)
+// ==========================================
+model Color {
+  id       String           @id @default(uuid())
+  name     String           @unique // "Qora", "Oq"
+  hexCode  String           // "#000000"
+  variants ProductVariant[]
+}
+
+model Size {
+  id       String           @id @default(uuid())
+  name     String           @unique // "XL", "42", "256GB"
+  variants ProductVariant[]
+}
+
+model ProductVariant {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  colorId     String?
+  color       Color?   @relation(fields: [colorId], references: [id])
+  
+  sizeId      String?
+  size        Size?    @relation(fields: [sizeId], references: [id])
+
+  sku         String   @unique // Sklad unikal kodi
+  price       Decimal  @db.Decimal(12, 2)
+  discount    Decimal? @db.Decimal(12, 2) // Chegirmadagi narxi
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true)
+  
+  images      Image[]
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
+  odooId      Int?     @unique // Odoo dagi IDsi
+}
+
+// ==========================================
+// 4. SAVATCHA VA WISHLIST
+// ==========================================
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id          String         @id @default(uuid())
+  cartId      String
+  cart        Cart           @relation(fields: [cartId], references: [id])
+  variantId   String
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+  quantity    Int            @default(1)
+}
+
+model Wishlist {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  products  Product[]
+}
+
+// ==========================================
+// 5. BUYURTMA VA TO'LOV
+// ==========================================
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     Int         @unique @default(autoincrement())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  
+  items           OrderItem[]
+  totalAmount     Decimal     @db.Decimal(12, 2)
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(UNPAID)
+  paymentMethod   String?     // "CLICK", "PAYME", "CASH"
+  
+  addressId       String
+  address         Address     @relation(fields: [addressId], references: [id])
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id              String         @id @default(uuid())
+  orderId         String
+  order           Order          @relation(fields: [orderId], references: [id])
+  variantId       String
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+  quantity        Int
+  priceAtPurchase Decimal        @db.Decimal(12, 2) // Xarid paytidagi narx
+}
+
+// ==========================================
+// 6. YORDAMCHI JADVALLAR
+// ==========================================
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  city      String
+  district  String
+  street    String
+  house     String
+  isDefault Boolean  @default(false)
+  orders    Order[]
+}
+
+model Image {
+  id               String         @id @default(uuid())
+  url              String
+  productVariantId String
+  variant          ProductVariant @relation(fields: [productVariantId], references: [id])
+  isMain           Boolean        @default(false)
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      @default(5)
+  comment   String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// ENUMLAR
+// ==========================================
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
