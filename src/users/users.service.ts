@@ -10,9 +10,43 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
 
+import { OdooService } from '../odoo/odoo.service';
+
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private odooService: OdooService,
+  ) { }
+
+  async syncFromOdoo() {
+    const odooPartners = await this.odooService.findCustomers();
+    let synced = 0;
+
+    for (const oPartner of odooPartners) {
+      if (!oPartner.email && !oPartner.phone) continue;
+
+      await this.prisma.user.upsert({
+        where: { odooId: oPartner.id },
+        update: {
+          fullName: oPartner.name,
+          email: oPartner.email || undefined,
+          phone: oPartner.phone || `ODOO-${oPartner.id}`,
+        },
+        create: {
+          fullName: oPartner.name,
+          email: oPartner.email || undefined,
+          phone: oPartner.phone || `ODOO-${oPartner.id}`,
+          password: '', // Placeholder
+          odooId: oPartner.id,
+          isActive: true,
+        },
+      });
+      synced++;
+    }
+
+    return { syncedUsers: synced };
+  }
 
   async create(dto: CreateUserDto) {
     if (dto.role === Role.SUPER_ADMIN) {

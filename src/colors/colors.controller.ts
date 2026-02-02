@@ -12,16 +12,20 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ColorsService } from './colors.service';
 import { CreateColorDto, UpdateColorDto } from './dto/color.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Colors')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('colors')
 export class ColorsController {
     constructor(private readonly colorsService: ColorsService) { }
 
     @Post()
-    @ApiOperation({ summary: 'Rang yaratish' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.MODERATOR)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Rang yaratish (Admin/Moderator)' })
     create(@Body() dto: CreateColorDto) {
         return this.colorsService.create(dto);
     }
@@ -39,9 +43,21 @@ export class ColorsController {
     }
 
     @Patch(':id')
-    @ApiOperation({ summary: 'Rangni tahrirlash' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.MODERATOR)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Rangni tahrirlash (Admin/Moderator)' })
     update(@Param('id') id: string, @Body() dto: UpdateColorDto) {
         return this.colorsService.update(id, dto);
+    }
+
+    @Post('sync')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Ranglarni Odoo dan sinxronizatsiya qilish (Admin only)' })
+    syncFromOdoo() {
+        return this.colorsService.syncFromOdoo();
     }
 
     @Delete(':id')

@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CartService } from './cart.service';
 import { AddToCartDto, UpdateCartItemDto } from './dto/cart.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Cart')
 @ApiBearerAuth()
@@ -47,7 +48,7 @@ export class CartController {
 
     @Delete('clear')
     @ApiOperation({ summary: 'Savatchani tozalash' })
-    clearCart(@Req() req: any) {
-        return this.cartService.clearCart(req.user.id);
+    clearCart(@CurrentUser() user: any) {
+        return this.cartService.clearCart(user.id);
     }
 }

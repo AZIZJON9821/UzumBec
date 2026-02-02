@@ -22,9 +22,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException();
     }
 
-    // Check if user is active or deleted?
+    // Check if user is active
     if (!user.isActive) {
-      // Maybe throw? or allow?
+      throw new UnauthorizedException('Foydalanuvchi faol emas');
     }
 
     // Attach user to request

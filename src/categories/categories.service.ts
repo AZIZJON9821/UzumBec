@@ -7,6 +7,11 @@ export class CategoriesService {
     constructor(private prisma: PrismaService) { }
 
     async create(dto: CreateCategoryDto) {
+        if (dto.parentId) {
+            const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId } });
+            if (!parent) throw new NotFoundException('Parent kategoriya topilmadi');
+        }
+
         const slug = this.slugify(dto.name) + '-' + Date.now();
         return this.prisma.category.create({
             data: {
@@ -42,6 +47,11 @@ export class CategoriesService {
     }
 
     async update(id: string, dto: UpdateCategoryDto) {
+        if (dto.parentId) {
+            const parent = await this.prisma.category.findUnique({ where: { id: dto.parentId } });
+            if (!parent) throw new NotFoundException('Yangi parent kategoriya topilmadi');
+        }
+
         return this.prisma.category.update({
             where: { id },
             data: dto,

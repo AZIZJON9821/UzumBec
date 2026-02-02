@@ -12,10 +12,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SizesService } from './sizes.service';
 import { CreateSizeDto, UpdateSizeDto } from './dto/size.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Sizes')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('sizes')
 export class SizesController {
     constructor(private readonly sizesService: SizesService) { }
@@ -42,6 +43,12 @@ export class SizesController {
     @ApiOperation({ summary: 'O’lchamni tahrirlash' })
     update(@Param('id') id: string, @Body() dto: UpdateSizeDto) {
         return this.sizesService.update(id, dto);
+    }
+
+    @Post('sync')
+    @ApiOperation({ summary: 'O’lchamlarni Odoo dan sinxronizatsiya qilish' })
+    syncFromOdoo() {
+        return this.sizesService.syncFromOdoo();
     }
 
     @Delete(':id')

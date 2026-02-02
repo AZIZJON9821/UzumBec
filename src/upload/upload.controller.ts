@@ -9,14 +9,16 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
+import { SupabaseService } from './supabase.service';
 
 @ApiTags('Uploads')
 @Controller('uploads')
 export class UploadController {
+    constructor(private readonly supabaseService: SupabaseService) { }
+
     @Post('image')
-    @ApiOperation({ summary: 'Rasm yuklash' })
+    @ApiOperation({ summary: 'Rasm yuklash (Supabase)' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
         schema: {
@@ -31,31 +33,24 @@ export class UploadController {
     })
     @UseInterceptors(
         FileInterceptor('file', {
-            storage: diskStorage({
-                destination: './uploads',
-                filename: (req, file, callback) => {
-                    const uniqueSuffix =
-                        Date.now() + '-' + Math.round(Math.random() * 1e9);
-                    const ext = extname(file.originalname);
-                    callback(null, `${uniqueSuffix}${ext}`);
-                },
-            }),
+            storage: memoryStorage(),
         }),
     )
-    uploadFile(
+    async uploadFile(
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-                    new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+                    new FileTypeValidator({ fileType: 'image/(jpeg|jpg|png|webp)' }),
                 ],
             }),
         )
         file: Express.Multer.File,
     ) {
+        const result = await this.supabaseService.uploadImage(file);
         return {
             message: 'Rasm muvaffaqiyatli yuklandi',
-            url: `/uploads/${file.filename}`,
+            url: result.url,
         };
     }
 }

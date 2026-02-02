@@ -49,6 +49,12 @@ export class AddressesController {
         return this.addressesService.update(id, dto, req.user.id);
     }
 
+    @Post('sync')
+    @ApiOperation({ summary: 'Manzillarni Odoo dan sinxronizatsiya qilish' })
+    syncFromOdoo() {
+        return this.addressesService.syncFromOdoo();
+    }
+
     @Delete(':id')
     @ApiOperation({ summary: 'Manzilni o’chirish' })
     remove(@Param('id') id: string) {

@@ -12,6 +12,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -20,8 +23,9 @@ export class CategoriesController {
 
     @Post()
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Yangi kategoriya yaratish' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.MODERATOR)
+    @ApiOperation({ summary: 'Yangi kategoriya yaratish (Admin/Moderator)' })
     create(@Body() dto: CreateCategoryDto) {
         return this.categoriesService.create(dto);
     }
@@ -40,16 +44,18 @@ export class CategoriesController {
 
     @Patch(':id')
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Kategoriyani yangilash' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.MODERATOR)
+    @ApiOperation({ summary: 'Kategoriyani yangilash (Admin/Moderator)' })
     update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
         return this.categoriesService.update(id, dto);
     }
 
     @Delete(':id')
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Kategoriyani o\'chirish' })
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    @ApiOperation({ summary: 'Kategoriyani o\'chirish (Admin only)' })
     remove(@Param('id') id: string) {
         return this.categoriesService.remove(id);
     }

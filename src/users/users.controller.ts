@@ -26,7 +26,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create new user (Admin only)' })
@@ -56,6 +56,12 @@ export class UsersController {
   @ApiResponse({ status: 200, type: UserResponseDto })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Post('sync')
+  @ApiOperation({ summary: 'Sync users from Odoo (Admin only)' })
+  syncFromOdoo() {
+    return this.usersService.syncFromOdoo();
   }
 
   @Delete(':id')

@@ -21,6 +21,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class ImagesController {
     constructor(private readonly imagesService: ImagesService) { }
 
+    @Post('sync')
+    @ApiOperation({ summary: 'Sync image data from Odoo' })
+    sync() {
+        return this.imagesService.syncFromOdoo();
+    }
+
     @Post()
     @ApiOperation({ summary: 'Rasm ma’lumotini saqlash' })
     create(@Body() dto: CreateImageDto) {

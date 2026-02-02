@@ -34,10 +34,12 @@ export class OdooService {
           {},
         ],
         (error, value) => {
-          if (error) return reject(error);
+          if (error) {
+            return reject(new InternalServerErrorException(`Odoo connection error: ${(error as any).message || 'Connection refused'}. Is the Odoo Docker container running?`));
+          }
           if (!value)
             return reject(
-              new InternalServerErrorException('Odoo authentication failed'),
+              new InternalServerErrorException('Odoo authentication failed: Incorrect Database, Username or Password'),
             );
           this.uid = value;
           resolve(value);
@@ -84,8 +86,23 @@ export class OdooService {
   // Example: Find partners (customers)
   async findCustomers() {
     return this.executeKw('res.partner', 'search_read', [[]], {
-      fields: ['name', 'email', 'phone'],
-      limit: 10,
+      fields: ['name', 'email', 'phone', 'is_company', 'parent_id'],
+      limit: 100,
+    });
+  }
+
+  // Find product attributes (Color, Size, etc.)
+  async findAttributes() {
+    return this.executeKw('product.attribute', 'search_read', [[]], {
+      fields: ['name', 'display_name'],
+    });
+  }
+
+  // Find product attribute values (Qora, Oq, XL, etc.)
+  async findAttributeValues() {
+    return this.executeKw('product.attribute.value', 'search_read', [[]], {
+      fields: ['name', 'display_name', 'attribute_id'],
+      limit: 200,
     });
   }
 }

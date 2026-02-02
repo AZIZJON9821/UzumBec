@@ -6,22 +6,30 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
 import { CreateVariantDto, UpdateVariantDto } from './dto/variant.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   // ==========================================
   // ODOO SYNC
   // ==========================================
   @Post('sync')
-  @ApiOperation({ summary: 'Sync products and variants from Odoo' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Sync products and variants from Odoo (Admin only)' })
   sync() {
     return this.productsService.syncFromOdoo();
   }
@@ -30,7 +38,10 @@ export class ProductsController {
   // PRODUCT ENDPOINTS
   // ==========================================
   @Post()
-  @ApiOperation({ summary: 'Create new product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create new product (Admin/Moderator)' })
   createProduct(@Body() dto: CreateProductDto) {
     return this.productsService.createProduct(dto);
   }
@@ -48,13 +59,19 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update product (Admin/Moderator)' })
   updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.productsService.updateProduct(id, dto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete product (Soft delete)' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete product - Soft delete (Admin only)' })
   removeProduct(@Param('id') id: string) {
     return this.productsService.removeProduct(id);
   }
@@ -63,13 +80,19 @@ export class ProductsController {
   // VARIANT ENDPOINTS
   // ==========================================
   @Post('variants')
-  @ApiOperation({ summary: 'Create new product variant' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create new product variant (Admin/Moderator)' })
   createVariant(@Body() dto: CreateVariantDto) {
     return this.productsService.createVariant(dto);
   }
 
   @Patch('variants/:id')
-  @ApiOperation({ summary: 'Update product variant' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update product variant (Admin/Moderator)' })
   updateVariant(@Param('id') id: string, @Body() dto: UpdateVariantDto) {
     return this.productsService.updateVariant(id, dto);
   }

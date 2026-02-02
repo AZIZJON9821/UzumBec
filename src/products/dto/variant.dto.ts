@@ -48,6 +48,16 @@ export class CreateVariantDto {
 }
 
 export class UpdateVariantDto {
+  @ApiPropertyOptional({ example: 'uuid-color-id' })
+  @IsOptional()
+  @IsUUID()
+  colorId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-size-id' })
+  @IsOptional()
+  @IsUUID()
+  sizeId?: string;
+
   @ApiPropertyOptional({ example: 'IPHONE-15-PRO-QORA-NEW' })
   @IsOptional()
   @IsString()

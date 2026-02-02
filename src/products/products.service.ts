@@ -12,7 +12,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private odooService: OdooService,
-  ) {}
+  ) { }
 
   // ==========================================
   // ODOO SYNC
@@ -20,18 +20,18 @@ export class ProductsService {
   async syncFromOdoo() {
     this.logger.log('Starting Odoo product sync...');
 
-    // 1. Fetch templates from Odoo
+    // 1. Fetch templates
     const odooProducts = await this.odooService.executeKw(
       'product.template',
       'search_read',
       [[]],
       {
         fields: ['name', 'list_price', 'description_sale', 'categ_id'],
-        limit: 50,
+        limit: 100,
       },
     );
 
-    // 2. Fetch variants (product.product)
+    // 2. Fetch variants
     const odooVariants = await this.odooService.executeKw(
       'product.product',
       'search_read',
@@ -44,7 +44,7 @@ export class ProductsService {
           'qty_available',
           'product_tmpl_id',
         ],
-        limit: 100,
+        limit: 200,
       },
     );
 
@@ -54,32 +54,36 @@ export class ProductsService {
 
     for (const oProduct of odooProducts) {
       try {
-        const oCategoryId = oProduct.categ_id[0];
-        const oCategoryName = oProduct.categ_id[1];
+        const oCategoryId = oProduct.categ_id ? oProduct.categ_id[0] : null;
+        const oCategoryName = oProduct.categ_id ? oProduct.categ_id[1] : 'Uncategorized';
 
-        const localCategory = await this.prisma.category.upsert({
-          where: { odooId: oCategoryId },
-          update: { name: oCategoryName },
-          create: {
-            name: oCategoryName,
-            slug: this.slugify(oCategoryName) + '-' + oCategoryId,
-            odooId: oCategoryId,
-          },
-        });
+        let localCategoryId: string | undefined = undefined;
+        if (oCategoryId) {
+          const localCategory = await this.prisma.category.upsert({
+            where: { odooId: oCategoryId },
+            update: { name: oCategoryName },
+            create: {
+              name: oCategoryName,
+              slug: this.slugify(oCategoryName) + '-' + oCategoryId,
+              odooId: oCategoryId,
+            },
+          });
+          localCategoryId = localCategory.id;
+        }
 
         const product = await this.prisma.product.upsert({
           where: { odooId: oProduct.id },
           update: {
             name: oProduct.name,
             description: oProduct.description_sale || '',
-            categoryId: localCategory.id,
+            categoryId: localCategoryId || undefined,
             status: ProductStatus.ACTIVE,
           },
           create: {
             name: oProduct.name,
             slug: this.slugify(oProduct.name) + '-' + oProduct.id,
             description: oProduct.description_sale || '',
-            categoryId: localCategory.id,
+            categoryId: localCategoryId || '', // Use empty string if no category
             sellerId: 'system',
             odooId: oProduct.id,
             status: ProductStatus.ACTIVE,
@@ -89,9 +93,7 @@ export class ProductsService {
         templateMap.set(oProduct.id, product.id);
         syncedCount++;
       } catch (err) {
-        this.logger.error(
-          `Failed to sync product ${oProduct.name}: ${err.message}`,
-        );
+        this.logger.error(`Failed to sync product ${oProduct.name}: ${err.message}`);
       }
     }
 
@@ -122,9 +124,7 @@ export class ProductsService {
           variantCount++;
         }
       } catch (err) {
-        this.logger.error(
-          `Failed to sync variant ${oVariant.name}: ${err.message}`,
-        );
+        this.logger.error(`Failed to sync variant ${oVariant.name}: ${err.message}`);
       }
     }
 
@@ -139,6 +139,19 @@ export class ProductsService {
   // PRODUCT CRUD
   // ==========================================
   async createProduct(dto: CreateProductDto) {
+    const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+    if (!category) throw new NotFoundException('Kategoriya topilmadi');
+
+    if (dto.sellerId && dto.sellerId !== 'system') {
+      const seller = await this.prisma.user.findUnique({ where: { id: dto.sellerId } });
+      if (!seller) throw new NotFoundException('Sotuvchi topilmadi');
+    }
+
+    if (dto.odooId) {
+      const existing = await this.prisma.product.findUnique({ where: { odooId: dto.odooId } });
+      if (existing) throw new NotFoundException('Ushbu Odoo IDli mahsulot allaqachon mavjud');
+    }
+
     const slug = this.slugify(dto.name) + '-' + Date.now();
     return this.prisma.product.create({
       data: {
@@ -175,6 +188,10 @@ export class ProductsService {
   }
 
   async updateProduct(id: string, dto: UpdateProductDto) {
+    if (dto.categoryId) {
+      const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+      if (!category) throw new NotFoundException('Yangi kategoriya topilmadi');
+    }
     return this.prisma.product.update({
       where: { id },
       data: dto,
@@ -192,12 +209,38 @@ export class ProductsService {
   // VARIANT CRUD
   // ==========================================
   async createVariant(dto: CreateVariantDto) {
+    const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+    if (!product) throw new NotFoundException('Mahsulot topilmadi');
+
+    if (dto.colorId) {
+      const color = await this.prisma.color.findUnique({ where: { id: dto.colorId } });
+      if (!color) throw new NotFoundException('Rang topilmadi');
+    }
+
+    if (dto.sizeId) {
+      const size = await this.prisma.size.findUnique({ where: { id: dto.sizeId } });
+      if (!size) throw new NotFoundException('O’lcham topilmadi');
+    }
+
+    const existingSku = await this.prisma.productVariant.findUnique({ where: { sku: dto.sku } });
+    if (existingSku) throw new NotFoundException('Ushbu SKU allaqachon mavjud');
+
     return this.prisma.productVariant.create({
       data: dto,
     });
   }
 
   async updateVariant(id: string, dto: UpdateVariantDto) {
+    if (dto.colorId) {
+      const color = await this.prisma.color.findUnique({ where: { id: dto.colorId } });
+      if (!color) throw new NotFoundException('Yangi rang topilmadi');
+    }
+
+    if (dto.sizeId) {
+      const size = await this.prisma.size.findUnique({ where: { id: dto.sizeId } });
+      if (!size) throw new NotFoundException('Yangi o’lcham topilmadi');
+    }
+
     return this.prisma.productVariant.update({
       where: { id },
       data: dto,
