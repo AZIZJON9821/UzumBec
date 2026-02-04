@@ -287,7 +287,7 @@ export class AuthService {
     // Update RT in DB
     await this.updateRtHash(userId, refreshToken);
 
-    return { accessToken: token, refreshToken };
+    return { accessToken: token, refreshToken ,role};
   }
 
   async updateRtHash(userId: string, rt: string) {
