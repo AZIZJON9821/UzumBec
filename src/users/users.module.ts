@@ -7,5 +7,6 @@ import { OdooModule } from '../odoo/odoo.module';
   imports: [OdooModule],
   providers: [UsersService],
   controllers: [UsersController],
+  exports: [UsersService],
 })
 export class UsersModule { }
