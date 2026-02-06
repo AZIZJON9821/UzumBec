@@ -49,9 +49,10 @@ export class VerifyOtpDto {
 }
 
 export class RegisterDto {
-  @ApiProperty({ example: '+998901234567', description: 'User phone number' })
+  @ApiPropertyOptional({ example: '+998901234567', description: 'User phone number' })
+  @IsOptional()
   @IsPhoneNumber('UZ')
-  phone: string;
+  phone?: string;
 
   @ApiPropertyOptional({ example: 'John Doe', description: 'Full name' })
   @IsOptional()
