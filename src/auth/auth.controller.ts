@@ -23,11 +23,37 @@ import {
   LoginDto,
   ResetPasswordDto,
 } from './dto/auth.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import type { User } from '@prisma/client';
+import { UsersService } from '../users/users.service';
+import { UpdateUserDto } from '../users/dto/update-user.dto';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) { }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile returned' })
+  getProfile(@CurrentUser() user: User) {
+    return this.usersService.findOne(user.id);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile updated' })
+  updateProfile(@CurrentUser() user: User, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(user.id, dto);
+  }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)

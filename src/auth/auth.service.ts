@@ -176,25 +176,55 @@ export class AuthService {
       const existingEmail = await this.prisma.user.findUnique({
         where: { email: dto.email },
       });
-      const existingUserByPhone = await this.prisma.user.findUnique({
-        where: { phone: dto.phone },
-      });
 
-      if (
-        existingEmail &&
-        (!existingUserByPhone || existingEmail.id !== existingUserByPhone.id)
-      ) {
-        throw new BadRequestException('Bu email allaqachon band');
+      // If phone is provided, check it too
+      if (dto.phone) {
+        const existingUserByPhone = await this.prisma.user.findUnique({
+          where: { phone: dto.phone },
+        });
+
+        if (
+          existingEmail &&
+          (!existingUserByPhone || existingEmail.id !== existingUserByPhone.id)
+        ) {
+          throw new BadRequestException('Bu email allaqachon band');
+        }
+      } else {
+        // Only email provided, and it exists
+        if (existingEmail) {
+          // Check if it's a full user or just OTP stub? 
+          // Assuming strict unique email for now for full users.
+          // If the user exists but not active, we can update? 
+          // Let's stick to simple 'already exists' for now if active.
+          if (existingEmail.isActive && existingEmail.password) {
+            throw new BadRequestException('Bu email allaqachon band');
+          }
+          // If not active, we might update below (findUnique logic).
+        }
       }
     }
 
-    const user = await this.prisma.user.findUnique({
-      where: { phone: dto.phone },
-    });
+    let user: import('@prisma/client').User | null = null;
+    if (dto.phone) {
+      user = await this.prisma.user.findUnique({
+        where: { phone: dto.phone },
+      });
+    } else if (dto.email) {
+      user = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+    } else {
+      throw new BadRequestException('Telefon yoki Email kiritilishi shart');
+    }
 
     if (user && user.isActive && user.password) {
       throw new BadRequestException('Foydalanuvchi allaqachon mavjud');
     }
+
+    // Generate OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 5);
 
     // If user exists (from sendOtp) but is not active/full, update it.
     if (user) {
@@ -202,12 +232,22 @@ export class AuthService {
         where: { id: user.id },
         data: {
           fullName: dto.fullName,
-          email: dto.email,
+          phone: dto.phone || user.phone, // Update phone if provided, else keep existing
+          email: dto.email || user.email,
           password: dto.password ? await bcrypt.hash(dto.password, 10) : '',
-          // isActive remains false until OTP verified?
-          // Or if they register, they might need to verify phone.
+          otpCode: otp,
+          otpExpires: expires,
         },
       });
+
+      // Send OTP
+      const targetEmail = dto.email || user.email;
+      if (targetEmail) {
+        await this.mailService.sendOtp(targetEmail, otp);
+      } else if (dto.phone || user.phone) {
+        console.log(`[OTP] Phone: ${dto.phone || user.phone}, Code: ${otp}`);
+      }
+
       return {
         message:
           "Foydalanuvchi ma'lumotlari yangilandi, iltimos OTP kodni tasdiqlang",
@@ -223,8 +263,17 @@ export class AuthService {
         password: dto.password ? await bcrypt.hash(dto.password, 10) : '',
         role: 'CUSTOMER',
         isActive: false,
+        otpCode: otp,
+        otpExpires: expires,
       },
     });
+
+    // Send OTP
+    if (dto.email) {
+      await this.mailService.sendOtp(dto.email, otp);
+    } else if (dto.phone) {
+      console.log(`[OTP] Phone: ${dto.phone}, Code: ${otp}`);
+    }
 
     return {
       message: "Ro'yxatdan o'tish muvaffaqiyatli, iltimos OTP kodni tasdiqlang",
@@ -270,7 +319,7 @@ export class AuthService {
   }
 
   // Helper
-  async signToken(userId: string, phone: string, role: string) {
+  async signToken(userId: string, phone: string | null | undefined, role: string) {
     const payload = { sub: userId, phone, role };
     const secret = process.env.JWT_SECRET || 'supersecret'; // Fallback
 
@@ -287,7 +336,7 @@ export class AuthService {
     // Update RT in DB
     await this.updateRtHash(userId, refreshToken);
 
-    return { accessToken: token, refreshToken ,role};
+    return { accessToken: token, refreshToken, role };
   }
 
   async updateRtHash(userId: string, rt: string) {

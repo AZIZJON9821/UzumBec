@@ -29,7 +29,7 @@ export class ProductsController {
   // ==========================================
   @Post('sync')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Sync products and variants from Odoo (Admin only)' })
   sync() {
