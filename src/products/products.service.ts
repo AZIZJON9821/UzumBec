@@ -162,14 +162,126 @@ export class ProductsService {
     });
   }
 
-  async findAllProducts() {
-    return this.prisma.product.findMany({
-      where: { isDeleted: false },
+  async findAllProducts(filters?: {
+    categoryId?: string;
+    search?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    colorIds?: string[];
+    sizeIds?: string[];
+    brandId?: string;
+    sortBy?: 'popular' | 'newest' | 'price_asc' | 'price_desc' | 'rating';
+    limit?: number;
+    offset?: number;
+  }) {
+    const {
+      categoryId,
+      search,
+      minPrice,
+      maxPrice,
+      colorIds,
+      sizeIds,
+      brandId,
+      sortBy = 'newest',
+      limit = 20,
+      offset = 0,
+    } = filters || {};
+
+    // Convert to numbers to ensure type safety
+    const numLimit = Number(limit) || 20;
+    const numOffset = Number(offset) || 0;
+
+    // Build where clause
+    const where: any = { isDeleted: false };
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (brandId) {
+      where.brandId = brandId;
+    }
+
+    // Variant filters
+    if (minPrice || maxPrice || colorIds || sizeIds) {
+      where.variants = {
+        some: {
+          ...(minPrice && { price: { gte: minPrice } }),
+          ...(maxPrice && { price: { lte: maxPrice } }),
+          ...(colorIds && colorIds.length > 0 && { colorId: { in: colorIds } }),
+          ...(sizeIds && sizeIds.length > 0 && { sizeId: { in: sizeIds } }),
+        },
+      };
+    }
+
+    // Build orderBy
+    let orderBy: any = {};
+    switch (sortBy) {
+      case 'popular':
+        // Use rating as proxy for popularity
+        orderBy = { rating: 'desc' };
+        break;
+      case 'newest':
+        orderBy = { createdAt: 'desc' };
+        break;
+      case 'rating':
+        orderBy = { rating: 'desc' };
+        break;
+      case 'price_asc':
+      case 'price_desc':
+        // For price sorting, we'll sort by the minimum variant price
+        orderBy = { createdAt: 'desc' }; // Fallback, price sorting needs aggregation
+        break;
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
+    const products = await this.prisma.product.findMany({
+      where,
       include: {
         category: true,
-        variants: true,
+        _count: {
+          select: { reviews: true },
+        },
+        variants: {
+          include: {
+            color: true,
+            size: true,
+            images: true,
+          },
+        },
       },
+      orderBy,
+      take: numLimit,
+      skip: numOffset,
     });
+
+    // Map to result to include reviewCount
+    const results = products.map(p => {
+      const { _count, ...rest } = p;
+      return {
+        ...rest,
+        reviewCount: _count.reviews,
+      };
+    });
+
+    // For price sorting, sort in memory
+    if (sortBy === 'price_asc' || sortBy === 'price_desc') {
+      results.sort((a, b) => {
+        const minPriceA = Math.min(...a.variants.map(v => Number(v.discount) || Number(v.price)));
+        const minPriceB = Math.min(...b.variants.map(v => Number(v.discount) || Number(v.price)));
+        return sortBy === 'price_asc' ? minPriceA - minPriceB : minPriceB - minPriceA;
+      });
+    }
+
+    return results;
   }
 
   async findOneProduct(id: string) {
@@ -177,14 +289,38 @@ export class ProductsService {
       where: { id },
       include: {
         category: true,
-        variants: {
-          include: { color: true, size: true },
+        _count: {
+          select: { reviews: true },
         },
-        reviews: true,
+        variants: {
+          include: {
+            color: true,
+            size: true,
+            images: true,
+          },
+        },
+        reviews: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
       },
     });
+
     if (!product) throw new NotFoundException('Mahsulot topilmadi');
-    return product;
+
+    const { _count, ...rest } = product;
+    return {
+      ...rest,
+      reviewCount: _count.reviews,
+    };
   }
 
   async updateProduct(id: string, dto: UpdateProductDto) {

@@ -44,7 +44,7 @@ export class WishlistService {
         );
 
         if (isProductInWishlist) {
-            return this.prisma.wishlist.update({
+            await this.prisma.wishlist.update({
                 where: { userId },
                 data: {
                     products: {
@@ -53,7 +53,7 @@ export class WishlistService {
                 },
             });
         } else {
-            return this.prisma.wishlist.update({
+            await this.prisma.wishlist.update({
                 where: { userId },
                 data: {
                     products: {
@@ -62,5 +62,6 @@ export class WishlistService {
                 },
             });
         }
+        return this.getWishlist(userId);
     }
 }

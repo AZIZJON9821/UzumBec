@@ -7,11 +7,13 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
 import { CreateVariantDto, UpdateVariantDto } from './dto/variant.dto';
+import { ProductFilterDto } from './dto/filter-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -47,9 +49,9 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all products' })
-  findAll() {
-    return this.productsService.findAllProducts();
+  @ApiOperation({ summary: 'Get all products with filters' })
+  findAll(@Query() filters: ProductFilterDto) {
+    return this.productsService.findAllProducts(filters);
   }
 
   @Get(':id')

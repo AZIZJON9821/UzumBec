@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class AdminSeeder implements OnApplicationBootstrap {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async onApplicationBootstrap() {
     await this.seedSuperAdmin();
@@ -23,19 +23,16 @@ export class AdminSeeder implements OnApplicationBootstrap {
       return;
     }
 
-    const existingAdmin = await this.prisma.user.findFirst({
-      where: { role: Role.SUPER_ADMIN },
-    });
-
-    if (existingAdmin) {
-      console.log('Super Admin already exists.');
-      return;
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await this.prisma.user.create({
-      data: {
+    await this.prisma.user.upsert({
+      where: { phone },
+      update: {
+        password: hashedPassword,
+        role: Role.SUPER_ADMIN,
+        isActive: true,
+      },
+      create: {
         phone,
         password: hashedPassword,
         fullName: 'Super Admin',
