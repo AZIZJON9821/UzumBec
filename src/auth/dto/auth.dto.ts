@@ -49,23 +49,21 @@ export class VerifyOtpDto {
 }
 
 export class RegisterDto {
-  @ApiPropertyOptional({ example: '+998901234567', description: 'User phone number' })
-  @IsOptional()
-  @IsPhoneNumber('UZ')
-  phone?: string;
+  @ApiProperty({ example: '+998901234567', description: 'User phone number' })
+  @IsPhoneNumber('UZ', { message: "Telefon raqam noto'g'ri formatda" })
+  phone: string;
 
   @ApiPropertyOptional({ example: 'John Doe', description: 'Full name' })
   @IsOptional()
   @IsString()
   fullName?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'user@example.com',
     description: 'Email address',
   })
-  @IsOptional()
-  @IsString()
-  email?: string;
+  @IsEmail({}, { message: "Email noto'g'ri formatda" })
+  email: string;
 
   // Agar kelajakda parol kerak bo'lsa
   @ApiPropertyOptional({

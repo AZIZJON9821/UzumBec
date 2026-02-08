@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
@@ -23,8 +24,7 @@ import {
   LoginDto,
   ResetPasswordDto,
 } from './dto/auth.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CurrentUser } from './decorators/current-user.decorator';
+
 import type { User } from '@prisma/client';
 import { UsersService } from '../users/users.service';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
@@ -55,14 +55,7 @@ export class AuthController {
     return this.usersService.update(user.id, dto);
   }
 
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Return current user data' })
-  async getProfile(@CurrentUser() user: any) {
-    return user;
-  }
+
 
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)

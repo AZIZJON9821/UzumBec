@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAddressDto {
@@ -26,6 +26,17 @@ export class CreateAddressDto {
     @IsBoolean()
     @IsOptional()
     isDefault?: boolean;
+
+    @ApiProperty({ required: false })
+    @IsNumber()
+    @IsOptional()
+    latitude?: number;
+
+    @ApiProperty({ required: false })
+    @IsNumber()
+    @IsOptional()
+    longitude?: number;
 }
 
 export class UpdateAddressDto extends CreateAddressDto { }
+
