@@ -41,9 +41,9 @@ export class ProductsController {
   // ==========================================
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create new product (Admin/Moderator)' })
+  @ApiOperation({ summary: 'Create new product (Admin/Super Admin)' })
   createProduct(@Body() dto: CreateProductDto) {
     return this.productsService.createProduct(dto);
   }
@@ -62,18 +62,18 @@ export class ProductsController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update product (Admin/Moderator)' })
+  @ApiOperation({ summary: 'Update product (Admin/Super Admin)' })
   updateProduct(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.productsService.updateProduct(id, dto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete product - Soft delete (Admin only)' })
+  @ApiOperation({ summary: 'Delete product - Soft delete (Admin/Super Admin)' })
   removeProduct(@Param('id') id: string) {
     return this.productsService.removeProduct(id);
   }
@@ -83,18 +83,18 @@ export class ProductsController {
   // ==========================================
   @Post('variants')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create new product variant (Admin/Moderator)' })
+  @ApiOperation({ summary: 'Create new product variant (Admin/Super Admin)' })
   createVariant(@Body() dto: CreateVariantDto) {
     return this.productsService.createVariant(dto);
   }
 
   @Patch('variants/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MODERATOR)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update product variant (Admin/Moderator)' })
+  @ApiOperation({ summary: 'Update product variant (Admin/Super Admin)' })
   updateVariant(@Param('id') id: string, @Body() dto: UpdateVariantDto) {
     return this.productsService.updateVariant(id, dto);
   }

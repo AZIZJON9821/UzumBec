@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -9,7 +12,7 @@ async function bootstrap() {
   // Enable CORS for frontend
   app.enableCors({
     origin: ['http://localhost:3000', 'http://localhost:3001'],
-   });
+  });
 
   // Validation Pipe Global
   app.useGlobalPipes(new ValidationPipe());
