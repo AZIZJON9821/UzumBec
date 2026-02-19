@@ -16,13 +16,13 @@ import { CreateVariantDto, UpdateVariantDto } from './dto/variant.dto';
 import { ProductFilterDto } from './dto/filter-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '@prisma/client';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) { }
+  constructor(private readonly productsService: ProductsService) {}
 
   // ==========================================
   // ODOO SYNC
@@ -31,7 +31,9 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Sync products and variants from Odoo (Admin only)' })
+  @ApiOperation({
+    summary: 'Sync products and variants from Odoo (Admin only)',
+  })
   sync() {
     return this.productsService.syncFromOdoo();
   }

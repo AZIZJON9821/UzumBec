@@ -8,7 +8,7 @@ import { PrismaService } from '../database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { Role } from '../common/enums/role.enum';
 
 import { OdooService } from '../odoo/odoo.service';
 
@@ -17,7 +17,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private odooService: OdooService,
-  ) { }
+  ) {}
 
   async syncFromOdoo() {
     const odooPartners = await this.odooService.findCustomers();
