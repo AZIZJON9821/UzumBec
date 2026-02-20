@@ -31,11 +31,39 @@ export class OrdersService {
       totalAmount += Number(item.variant.price) * item.quantity;
     });
 
-    // 3. Create order
+    // 3. Handle static address ID by creating or retrieving default address
+    let addressId = dto.addressId;
+    if (dto.addressId === 'static-default-address-id') {
+      // Find or create a default address for the user
+      let defaultAddress = await this.prisma.address.findFirst({
+        where: {
+          userId: userId,
+          isDefault: true,
+        },
+      });
+
+      if (!defaultAddress) {
+        // If no default address exists, create one
+        defaultAddress = await this.prisma.address.create({
+          data: {
+            userId: userId,
+            city: 'Tashkent',
+            district: 'Yunusobod',
+            street: 'Amir Temur',
+            house: '123',
+            isDefault: true,
+          },
+        });
+      }
+
+      addressId = defaultAddress.id;
+    }
+
+    // 4. Create order
     const order = await this.prisma.order.create({
       data: {
         userId,
-        addressId: dto.addressId,
+        addressId: addressId,
         paymentMethod: dto.paymentMethod,
         totalAmount: totalAmount,
         items: {
@@ -48,7 +76,7 @@ export class OrdersService {
       },
     });
 
-    // 4. Clear cart
+    // 5. Clear cart
     await this.prisma.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
