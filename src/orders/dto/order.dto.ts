@@ -7,11 +7,26 @@ export enum PaymentMethod {
     CASH = 'CASH',
 }
 
+export enum DeliveryType {
+    DELIVERY = 'DELIVERY',
+    PICKUP = 'PICKUP',
+}
+
 export class CreateOrderDto {
-    @ApiProperty()
+    @ApiProperty({ required: false })
     @IsString()
-    @IsNotEmpty()
-    addressId: string;
+    @IsOptional()
+    addressId?: string;
+
+    @ApiProperty({ required: false })
+    @IsString()
+    @IsOptional()
+    pickupPointId?: string;
+
+    @ApiProperty({ enum: DeliveryType, default: DeliveryType.DELIVERY })
+    @IsEnum(DeliveryType)
+    @IsOptional()
+    deliveryType?: DeliveryType;
 
     @ApiProperty({ enum: PaymentMethod })
     @IsEnum(PaymentMethod)

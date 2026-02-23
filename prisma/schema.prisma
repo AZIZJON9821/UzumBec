@@ -199,14 +199,38 @@ model Order {
   paymentStatus PaymentStatus @default(UNPAID)
   paymentMethod String? // "CLICK", "PAYME", "CASH"
 
-  addressId String
-  address   Address @relation(fields: [addressId], references: [id])
+  deliveryType  DeliveryType @default(DELIVERY)
+
+  addressId String?
+  address   Address? @relation(fields: [addressId], references: [id])
+
+  pickupPointId String?
+  pickupPoint   PickupPoint? @relation(fields: [pickupPointId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@index([userId])
   @@index([addressId])
+  @@index([pickupPointId])
+}
+
+enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+model PickupPoint {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  lat       Float
+  lng       Float
+  isActive  Boolean  @default(true)
+  orders    Order[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderItem {

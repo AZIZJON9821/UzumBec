@@ -16,6 +16,7 @@ import { ColorsModule } from './colors/colors.module';
 import { SizesModule } from './sizes/sizes.module';
 import { UploadModule } from './upload/upload.module';
 import { ImagesModule } from './images/images.module';
+import { PickupPointsModule } from './pickup-points/pickup-points.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ImagesModule } from './images/images.module';
     WishlistModule,
     AddressModule,
     OrdersModule,
+    PickupPointsModule,
     ReviewsModule,
     ColorsModule,
     SizesModule,

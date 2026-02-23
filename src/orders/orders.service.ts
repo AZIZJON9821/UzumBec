@@ -8,7 +8,7 @@ import { CreateOrderDto } from './dto/order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(userId: string, dto: CreateOrderDto) {
     // 1. Get cart items
@@ -31,39 +31,51 @@ export class OrdersService {
       totalAmount += Number(item.variant.price) * item.quantity;
     });
 
-    // 3. Handle static address ID by creating or retrieving default address
-    let addressId = dto.addressId;
-    if (dto.addressId === 'static-default-address-id') {
-      // Find or create a default address for the user
-      let defaultAddress = await this.prisma.address.findFirst({
-        where: {
-          userId: userId,
-          isDefault: true,
-        },
-      });
+    // 3. Handle delivery type and location
+    const deliveryType = dto.deliveryType || 'DELIVERY';
+    let addressId = undefined;
+    let pickupPointId = undefined;
 
-      if (!defaultAddress) {
-        // If no default address exists, create one
-        defaultAddress = await this.prisma.address.create({
-          data: {
+    if (deliveryType === 'DELIVERY') {
+      addressId = dto.addressId;
+      if (addressId === 'static-default-address-id') {
+        // Find or create a default address for the user
+        let defaultAddress = await this.prisma.address.findFirst({
+          where: {
             userId: userId,
-            city: 'Tashkent',
-            district: 'Yunusobod',
-            street: 'Amir Temur',
-            house: '123',
             isDefault: true,
           },
         });
-      }
 
-      addressId = defaultAddress.id;
+        if (!defaultAddress) {
+          // If no default address exists, create one
+          defaultAddress = await this.prisma.address.create({
+            data: {
+              userId: userId,
+              city: 'Tashkent',
+              district: 'Yunusobod',
+              street: 'Amir Temur',
+              house: '123',
+              isDefault: true,
+            },
+          });
+        }
+        addressId = defaultAddress.id;
+      }
+    } else {
+      pickupPointId = dto.pickupPointId;
+      if (!pickupPointId) {
+        throw new BadRequestException('Olib ketish nuqtasi tanlanmagan');
+      }
     }
 
     // 4. Create order
     const order = await this.prisma.order.create({
       data: {
         userId,
+        deliveryType: deliveryType as any,
         addressId: addressId,
+        pickupPointId: pickupPointId,
         paymentMethod: dto.paymentMethod,
         totalAmount: totalAmount,
         items: {
