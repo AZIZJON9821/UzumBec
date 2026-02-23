@@ -33,8 +33,8 @@ export class OrdersService {
 
     // 3. Handle delivery type and location
     const deliveryType = dto.deliveryType || 'DELIVERY';
-    let addressId = undefined;
-    let pickupPointId = undefined;
+    let addressId: string | undefined = undefined;
+    let pickupPointId: string | undefined = undefined;
 
     if (deliveryType === 'DELIVERY') {
       addressId = dto.addressId;
