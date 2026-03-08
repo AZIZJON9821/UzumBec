@@ -13,8 +13,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:3001',
-      'https://uzum-ftont.vercel.app',
-      /\.vercel\.app$/,
+      'https://uzumshop.vercel.app',
+      /^https:\/\/uzumshop.*\.vercel\.app$/,
     ],
     credentials: true,
   });
@@ -40,5 +40,3 @@ async function bootstrap() {
   logger.log(`Swagger UI is available at: http://localhost:${port}/api/docs`);
 }
 void bootstrap();
-
-// asdasdasdasd
