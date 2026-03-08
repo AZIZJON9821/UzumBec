@@ -9,9 +9,14 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://uzum-ftont.vercel.app',
+      /\.vercel\.app$/,
+    ],
+    credentials: true,
   });
 
   // Validation Pipe Global
