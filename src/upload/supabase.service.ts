@@ -31,6 +31,7 @@ export class SupabaseService {
             });
 
         if (error) {
+            console.error('Supabase upload error details:', error);
             throw new InternalServerErrorException(
                 `Supabase upload error: ${error.message}`,
             );
