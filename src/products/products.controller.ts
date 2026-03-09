@@ -56,6 +56,12 @@ export class ProductsController {
     return this.productsService.findAllProducts(filters);
   }
 
+  @Get('suggestions')
+  @ApiOperation({ summary: 'Get product search suggestions' })
+  getSuggestions(@Query('q') query: string) {
+    return this.productsService.getSuggestions(query);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID' })
   findOne(@Param('id') id: string) {
@@ -80,6 +86,12 @@ export class ProductsController {
     return this.productsService.removeProduct(id);
   }
 
+  @Delete('variants/:id')
+  @ApiOperation({ summary: 'Delete product variant' })
+  removeVariant(@Param('id') id: string) {
+    return this.productsService.removeVariant(id);
+  }
+
   // ==========================================
   // VARIANT ENDPOINTS
   // ==========================================
@@ -101,15 +113,4 @@ export class ProductsController {
     return this.productsService.updateVariant(id, dto);
   }
 
-  @Get('suggestions')
-  @ApiOperation({ summary: 'Get product search suggestions' })
-  getSuggestions(@Query('q') query: string) {
-    return this.productsService.getSuggestions(query);
-  }
-
-  @Delete('variants/:id')
-  @ApiOperation({ summary: 'Delete product variant' })
-  removeVariant(@Param('id') id: string) {
-    return this.productsService.removeVariant(id);
-  }
 }
