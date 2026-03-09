@@ -390,8 +390,9 @@ export class ProductsService {
   }
 
   async getSuggestions(query: string) {
-    if (!query || query.length < 2) return [];
+    if (!query || query.length < 2) return { products: [], categories: [] };
 
+    // 1. Mahsulot nomlari
     const products = await this.prisma.product.findMany({
       where: {
         name: { contains: query, mode: 'insensitive' },
@@ -401,9 +402,30 @@ export class ProductsService {
       take: 20,
     });
 
-    // Uniqlashtirish va top 10tasini olish
-    const suggestions = Array.from(new Set(products.map(p => p.name))).slice(0, 10);
-    return suggestions;
+    const productSuggestions = Array.from(new Set(products.map(p => p.name.toLowerCase()))).slice(0, 5);
+
+    // 2. Kategoriyalar
+    const categories = await this.prisma.category.findMany({
+      where: {
+        name: { contains: query, mode: 'insensitive' },
+      },
+      include: {
+        parent: true,
+      },
+      take: 4,
+    });
+
+    const categorySuggestions = categories.map(c => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      parentName: c.parent?.name || 'Kategoriya',
+    }));
+
+    return {
+      products: productSuggestions,
+      categories: categorySuggestions,
+    };
   }
 
   // ==========================================
