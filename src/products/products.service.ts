@@ -389,6 +389,23 @@ export class ProductsService {
     });
   }
 
+  async getSuggestions(query: string) {
+    if (!query || query.length < 2) return [];
+
+    const products = await this.prisma.product.findMany({
+      where: {
+        name: { contains: query, mode: 'insensitive' },
+        isDeleted: false,
+      },
+      select: { name: true },
+      take: 20,
+    });
+
+    // Uniqlashtirish va top 10tasini olish
+    const suggestions = Array.from(new Set(products.map(p => p.name))).slice(0, 10);
+    return suggestions;
+  }
+
   // ==========================================
   // HELPERS
   // ==========================================

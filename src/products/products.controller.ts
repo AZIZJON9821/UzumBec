@@ -22,7 +22,7 @@ import { Role } from '../common/enums/role.enum';
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   // ==========================================
   // ODOO SYNC
@@ -99,6 +99,12 @@ export class ProductsController {
   @ApiOperation({ summary: 'Update product variant (Admin/Super Admin)' })
   updateVariant(@Param('id') id: string, @Body() dto: UpdateVariantDto) {
     return this.productsService.updateVariant(id, dto);
+  }
+
+  @Get('suggestions')
+  @ApiOperation({ summary: 'Get product search suggestions' })
+  getSuggestions(@Query('q') query: string) {
+    return this.productsService.getSuggestions(query);
   }
 
   @Delete('variants/:id')
