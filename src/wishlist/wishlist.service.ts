@@ -43,25 +43,22 @@ export class WishlistService {
             (p) => p.id === productId,
         );
 
-        if (isProductInWishlist) {
-            await this.prisma.wishlist.update({
-                where: { userId },
-                data: {
-                    products: {
-                        disconnect: { id: productId },
+        return this.prisma.wishlist.update({
+            where: { userId },
+            data: {
+                products: isProductInWishlist
+                    ? { disconnect: { id: productId } }
+                    : { connect: { id: productId } },
+            },
+            include: {
+                products: {
+                    include: {
+                        variants: {
+                            include: { images: { where: { isMain: true } } },
+                        },
                     },
                 },
-            });
-        } else {
-            await this.prisma.wishlist.update({
-                where: { userId },
-                data: {
-                    products: {
-                        connect: { id: productId },
-                    },
-                },
-            });
-        }
-        return this.getWishlist(userId);
+            },
+        });
     }
 }
