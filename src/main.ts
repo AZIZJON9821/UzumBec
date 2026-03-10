@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,7 +16,16 @@ async function bootstrap() {
   });
 
   // Validation Pipe Global
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,       // unknown fieldlarni avtomatik olib tashlaydi
+      forbidNonWhitelisted: false,
+      transform: true,       // string -> number conversion avtomatik
+    }),
+  );
+
+  // Prisma xatoliklarini foydalanuvchiga tushunarli xabar bilan qaytarish
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Swagger setup
   const config = new DocumentBuilder()
